@@ -169,7 +169,7 @@ Attendance-ai/
 
 ---
 
-## 🤖 Deep Dive: AI Face Matching Pipeline
+## 🤖 Deep Dive: AI Face Matching Pipelines
 SnapClass achieves high-accuracy facial verification by applying standard pre-processing:
 1. **Contrast Equalization:** Adapts to variable classroom lighting using Contrast Limited Adaptive Histogram Equalization (**CLAHE**) on the grayscale representation of input frames.
 2. **Feature Extraction:** Leverages Dlib's shape predictor to find facial landmarks, feeding them to the ResNet-based face descriptor model to output a unique 128-dimensional embedding.
