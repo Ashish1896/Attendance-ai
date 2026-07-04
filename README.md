@@ -1,119 +1,176 @@
-# 📸 SnapClass (Version 2.0.0)
-### *AI-Powered Attendance Tracking System*
+# 📸 SnapClass (v2.0.0)
+> **Enterprise-Grade AI-Powered Attendance & Face-Verification Management System**
+
+[![Python Version](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue.svg)](https://www.python.org/)
+[![Framework](https://img.shields.io/badge/framework-Streamlit-FF4B4B.svg)](https://streamlit.io/)
+[![Database](https://img.shields.io/badge/database-Supabase--PostgreSQL-3ECF8E.svg)](https://supabase.com/)
+[![AI Engine](https://img.shields.io/badge/AI--Engine-Dlib%20%2F%20Scikit--Learn-orange.svg)](#)
 
 SnapClass is an intelligent, secure, and modern class attendance management application that integrates **AI-driven Face Recognition** and dynamic **QR Code Verification**. Built specifically for educational institutions, it eliminates manual roll calls and buddy punching, providing a seamless check-in experience for students and robust management tools for teachers.
 
 ---
 
-## 🌟 Core Features
+## 🏗️ System Architecture
+
+The following flowchart illustrates the high-level architecture and data flow between the user interface portals, the backend database, and the AI processing pipeline.
+
+```mermaid
+graph TD
+    %% Portals
+    subgraph UI ["User Interface (Streamlit Portal)"]
+        Landing["Landing Screen"]
+        TeacherScreen["Teacher Portal"]
+        StudentScreen["Student Portal"]
+    end
+
+    %% State & DB
+    subgraph Storage ["Backend & State Management"]
+        DB[(Supabase PostgreSQL)]
+        SessionCache["Local Active Sessions Cache"]
+    end
+
+    %% AI Pipeline
+    subgraph AI ["AI Verification Engine"]
+        CLAHE["CLAHE Image Enhancement"]
+        DlibEmbed["Dlib 128D Face Embeddings"]
+        SVM["SVM Classification (Linear Kernel)"]
+    end
+
+    %% Connections
+    Landing -->|Choose Role| TeacherScreen
+    Landing -->|Choose Role| StudentScreen
+
+    TeacherScreen -->|Generate QR Session| DB
+    TeacherScreen -->|Retrieve Logs & Reports| DB
+    
+    StudentScreen -->|1. Scan QR Code| DB
+    StudentScreen -->|2. Capture & Match Face| CLAHE
+    
+    CLAHE --> DlibEmbed
+    DlibEmbed --> SVM
+    SVM -->|Match Result| StudentScreen
+    
+    StudentScreen -->|Log Verified Attendance| DB
+    StudentScreen -->|Verify Session Token| SessionCache
+    TeacherScreen -->|Verify Session Token| SessionCache
+```
+
+---
+
+## 🌟 Key Capabilities
 
 ### 👨‍🏫 Teacher Portal
-- **Create & Manage Subjects:** Organize classes by course codes, sections, and semesters.
-- **Dynamic QR Code Sessions:** Start live attendance sessions displaying a secure, temporary QR code that students must scan to register.
-- **Real-time Face-Matching Verification:** Verify student check-ins using processed face matches.
-- **Attendance Records & Exports:** View detailed attendance history, search logs, and export reports directly to CSV/Excel formats.
-- **Student Management:** View enrolled lists, add students, or unenroll them with one-click actions.
+*   **Subject & Class Setup:** Register subjects, sections, and custom invite codes.
+*   **Live Sessions:** Launch real-time attendance windows with temporary, dynamic QR codes.
+*   **Student Registry:** Manage enrolled students and view individual registration metrics.
+*   **Reporting Desk:** Filter attendance records by date, subject, or student, with one-click export to CSV.
 
 ### 🧑‍🎓 Student Portal
-- **Instant Enrollment:** Join new subjects easily using class invite codes shared by the teacher.
-- **AI Face Profile Registration:** Students enroll by uploading 3 clear photos. The pipeline extracts 128-dimensional facial feature vectors using **dlib** and trains an **SVM (Support Vector Machine) classifier** on-the-fly.
-- **Secure Log-in & Double-Factor Check-in:**
-  1. Scan the teacher's active session QR code.
-  2. Perform real-time camera face verification.
+*   **Face Profiling:** Enroll in the AI system by taking 3 reference photos. The system generates high-fidelity embedding vectors and trains a personalized SVM classifier on-the-fly.
+*   **Secure QR & Face Login:** Scan teacher-provided QR codes and undergo instant facial verification using the webcam.
+*   **Interactive History:** Monitor attendance percentages and status logs per subject.
+
+### 🔒 Enterprise Security Features
+*   **Concurrent Session Control:** Active session verifiers compare local session tokens with the database in real-time, preventing users from logging in with a single account across multiple devices.
+*   **Zero-Credential Exposure:** Built-in safeguards through a preconfigured `.gitignore` shield database passwords, runtime configurations, local database states, and build cache directories.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **User Interface:** [Streamlit](https://streamlit.io/) with customized CSS injections for base layout styles.
-- **AI/ML Pipelines:**
-  - **Face Detection:** Dlib frontal face detector.
-  - **Embedding Generator:** Dlib face recognition model v1 (128-d face descriptors).
-  - **Classifier:** Scikit-learn's Support Vector Classifier (SVC) with linear kernel.
-- **Database & Auth:** [Supabase](https://supabase.com/) (PostgreSQL backend for secure data storage).
-- **Utility Libraries:**
-  - **Segno:** High-fidelity QR code generation.
-  - **Pillow & OpenCV:** Image processing, normalization, and lighting/contrast adjustments (CLAHE).
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend UI** | Streamlit | Single-page reactive application framework |
+| **Styling** | Vanilla CSS Injections | Custom fonts (Outfit), custom cards, and responsive wrappers |
+| **AI / Computer Vision** | Dlib | Frontal face detector & 128-dimensional face embedding extraction |
+| **Machine Learning** | Scikit-learn (SVC) | SVM classifier using a linear kernel with balanced class weights |
+| **Database & Auth** | Supabase (PostgreSQL) | Dynamic storage of attendance logs, student/teacher details, and session state |
+| **QR Code Engine** | Segno | Vector-based dynamic QR Code generator |
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Installation & Setup Guide
 
 ### Prerequisites
-- Python 3.9 - 3.11 (Python 3.10 recommended)
-- Git
+- Python 3.9 - 3.11 (Python 3.10 is recommended)
+- OS: Windows 10/11, macOS, or Linux
+- C++ Compiler Tools (required for building `dlib` from source if precompiled binaries are unavailable)
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Ashish1896/Attendance.git
-cd Attendance
+git clone https://github.com/Ashish1896/Attendance-ai.git
+cd Attendance-ai
 ```
 
-### 2. Set Up a Virtual Environment
+### 2. Configure Virtual Environment
 ```bash
-# Create a virtual environment
+# Create the virtual environment
 python -m venv venv
 
 # Activate on Windows (cmd/PowerShell)
 .\venv\Scripts\activate
 
-# Or activate on macOS/Linux
+# Activate on macOS/Linux
 source venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 3. Install Requirements
 ```bash
 pip install -r requirements.txt
 ```
-*Note: If installing `dlib` poses compiler issues on your machine, the `requirements.txt` relies on `dlib-bin` to fetch precompiled binaries. Make sure you have C++ Build Tools installed if you build from source.*
+*Note: On Windows, `dlib-bin` is listed in `requirements.txt` to streamline installation by pulling precompiled wheels, avoiding compiler setup struggles.*
 
-### 4. Database Setup & Streamlit Secrets
-1. Create a project on [Supabase](https://supabase.com/).
-2. Create a folder named `.streamlit` in the root directory (already ignored in `.gitignore`).
-3. Create a `secrets.toml` file inside `.streamlit`:
+### 4. Database Credentials Configuration
+1. Setup a PostgreSQL project on [Supabase](https://supabase.com/).
+2. Create a folder named `.streamlit` at the root directory of the project.
+3. Add a file named `secrets.toml` inside `.streamlit/` containing your Supabase project keys:
    ```toml
    [supabase]
-   url = "https://your-supabase-project.supabase.co"
+   url = "https://your-project-id.supabase.co"
    key = "your-anon-role-key-jwt"
    ```
+> [!CAUTION]
+> Never commit `.streamlit/secrets.toml` to source control. The `.gitignore` in this project is preconfigured to prevent this.
 
-### 5. Run the Application
+### 5. Launch the Portal
 ```bash
 streamlit run app.py
 ```
 
 ---
 
-## 📂 Project Structure
+## 📂 Project Directory Structure
 
 ```
-Attendance/
+Attendance-ai/
 ├── .streamlit/
-│   └── secrets.toml          # Database keys (Git ignored)
+│   └── secrets.toml          # Supabase access credentials (Git ignored)
 ├── src/
-│   ├── assets/               # Local static images & logos
-│   ├── components/           # Reusable UI elements & dialog modals
-│   │   ├── qr_scanner/       # Custom web RTC camera QR reader component
-│   │   └── dialog_enroll.py  # Dialogs for class interactions
+│   ├── assets/               # Branding graphics, logos, and illustration assets
+│   ├── components/           # Reusable UI component modules
+│   │   ├── qr_scanner/       # HTML5/JS WebRTC camera stream for QR scanning
+│   │   └── dialog_enroll.py  # Portal dialog boxes (Enroll, Add Photo, etc.)
 │   ├── database/
-│   │   ├── config.py         # Supabase client instantiation
-│   │   └── db.py             # Database CRUD helper queries
+│   │   ├── config.py         # Supabase client initializer
+│   │   └── db.py             # Database CRUD abstractions and API layer
 │   ├── pipelines/
-│   │   ├── face_pipeline.py  # Face embeddings and SVC training pipeline
-│   │   └── qr_pipeline.py    # QR code session verification logic
+│   │   ├── face_pipeline.py  # Image normalization (CLAHE) & SVM face classification
+│   │   └── qr_pipeline.py    # Temporary QR session validator
 │   ├── screens/
-│   │   ├── home_screen.py    # Main landing portal selector
-│   │   ├── teacher_screen.py # Teacher flows, reports, and session control
-│   │   └── student_screen.py # Student enrollments, QR scans, and face check-in
+│   │   ├── home_screen.py    # Application entryway role-selection screen
+│   │   ├── teacher_screen.py # Teacher operations dashboard
+│   │   └── student_screen.py # Student operations dashboard
 │   └── ui/
-│       └── base_layout.py    # Global CSS injection styling scripts
-├── app.py                    # Application entry point
-├── requirements.txt          # Package dependencies
-└── README.md                 # Project documentation
+│       └── base_layout.py    # Styling wrapper and global layout parameters
+├── app.py                    # Entry point for the Streamlit server
+├── requirements.txt          # Python dependency listing
+└── README.md                 # System overview and operational guide
 ```
 
 ---
 
-## 🔒 Security & Privacy Features
-- **Single Session Checker:** Protects accounts from multiple logins on different devices by maintaining active sessions.
-- **Git Shielding:** `.gitignore` blocks deployment of API credentials (`secrets.toml`), build caches (`__pycache__`), and local state stores (`active_sessions.json`).
+## 🤖 Deep Dive: AI Face Matching Pipeline
+SnapClass achieves high-accuracy facial verification by applying standard pre-processing:
+1. **Contrast Equalization:** Adapts to variable classroom lighting using Contrast Limited Adaptive Histogram Equalization (**CLAHE**) on the grayscale representation of input frames.
+2. **Feature Extraction:** Leverages Dlib's shape predictor to find facial landmarks, feeding them to the ResNet-based face descriptor model to output a unique 128-dimensional embedding.
+3. **SVM Classification:** Trains a Support Vector Machine with a linear boundary using all enrolled student embeddings. During attendance validation, the model outputs match probabilities. Check-ins are approved only if the match probability exceeds safety thresholds.
