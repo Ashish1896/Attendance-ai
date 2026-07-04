@@ -171,8 +171,128 @@ Attendance-ai/
 
 ---
 
+
+   # 🏗️ System diagram
+
+```mermaid
+flowchart TD
+
+subgraph Runtime
+    App["App Entry<br/>app.py"]
+end
+
+subgraph UI
+    Home["Home Screen<br/>home_screen.py"]
+    Teacher["Teacher Portal<br/>teacher_screen.py"]
+    Student["Student Portal<br/>student_screen.py"]
+
+    Layout["Base Layout<br/>base_layout.py"]
+    Header["Header<br/>header.py"]
+    Footer["Footer<br/>footer.py"]
+
+    SubjectCard["Subject Card<br/>subject_card.py"]
+    Dialogs["Dialogs<br/>dialog_enroll.py"]
+
+    Assets["Assets"]
+end
+
+subgraph Browser
+    QR["QR Scanner<br/>index.html"]
+end
+
+subgraph Logic
+    QRPipeline["QR Pipeline<br/>qr_pipeline.py"]
+    FacePipeline["Face Pipeline<br/>face_pipeline.py"]
+end
+
+subgraph Database
+    Config["Supabase Config<br/>config.py"]
+    DB[("Database API<br/>db.py")]
+end
+
+App --> Home
+App --> Layout
+
+Layout --> Header
+Layout --> Footer
+Layout --> Assets
+
+Home --> Teacher
+Home --> Student
+
+Teacher --> SubjectCard
+Teacher --> Dialogs
+
+Student --> Dialogs
+Student --> QR
+
+Teacher --> QRPipeline
+Student --> QRPipeline
+
+Student --> FacePipeline
+
+Teacher --> DB
+Student --> DB
+
+QRPipeline --> DB
+FacePipeline --> DB
+
+Config --> DB
+DB --> Config
+
+classDef runtime fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+classDef ui fill:#fef3c7,stroke:#d97706,color:#78350f
+classDef browser fill:#dcfce7,stroke:#16a34a,color:#14532d
+classDef logic fill:#ffe4e6,stroke:#e11d48,color:#881337
+classDef database fill:#e0e7ff,stroke:#4f46e5,color:#312e81
+
+class App runtime
+class Home,Teacher,Student,Layout,Header,Footer,SubjectCard,Dialogs,Assets ui
+class QR browser
+class QRPipeline,FacePipeline logic
+class Config,DB database
+```
+
+---
+
+## 📂 Project Source Files
+
+| Module | File |
+|---------|------|
+| 🚀 App Entry | [`app.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/app.py) |
+| 🏠 Home Screen | [`home_screen.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/screens/home_screen.py) |
+| 👨‍🏫 Teacher Portal | [`teacher_screen.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/screens/teacher_screen.py) |
+| 👨‍🎓 Student Portal | [`student_screen.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/screens/student_screen.py) |
+| 🎨 Base Layout | [`base_layout.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/ui/base_layout.py) |
+| 📌 Header | [`header.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/components/header.py) |
+| 📌 Footer | [`footer.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/components/footer.py) |
+| 📚 Subject Card | [`subject_card.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/components/subject_card.py) |
+| 💬 Enrollment Dialog | [`dialog_enroll.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/components/dialog_enroll.py) |
+| 📷 QR Scanner | [`index.html`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/components/qr_scanner/index.html) |
+| 🤖 Face Recognition | [`face_pipeline.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/pipelines/face_pipeline.py) |
+| 🔐 QR Validation | [`qr_pipeline.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/pipelines/qr_pipeline.py) |
+| 🗄️ Database API | [`db.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/database/db.py) |
+| ⚙️ Supabase Config | [`config.py`](https://github.com/Ashish1896/Attendance-ai/blob/main/src/database/config.py) |
+
+
 ## 🤖 Deep Dive: AI Face Matching Pipelines
 SnapClass achieves high-accuracy facial verification by applying standard pre-processing:
 1. **Contrast Equalization:** Adapts to variable classroom lighting using Contrast Limited Adaptive Histogram Equalization (**CLAHE**) on the grayscale representation of input frames.
 2. **Feature Extraction:** Leverages Dlib's shape predictor to find facial landmarks, feeding them to the ResNet-based face descriptor model to output a unique 128-dimensional embedding.
 3. **SVM Classification:** Trains a Support Vector Machine with a linear boundary using all enrolled student embeddings. During attendance validation, the model outputs match probabilities. Check-ins are approved only if the match probability exceeds safety thresholds.
+
+## 🏗️ System Summery
+
+The architecture of **SnapClass (Attendance-ai)** follows a layered design that separates the user interface, application logic, AI pipelines, and data access layer.
+
+- 🌐 **Browser Layer** – Student and Teacher interact through the Streamlit web interface.
+- 🖥️ **Application Layer** – Streamlit manages authentication, navigation, dashboards, and attendance workflows.
+- 🤖 **AI Processing Layer**
+  - **Face Recognition Pipeline:** Image preprocessing (CLAHE) → Face Detection (dlib) → 128-D Face Embeddings → SVM Classification.
+  - **QR Verification Pipeline:** Generates and validates secure 6-character QR codes for attendance sessions.
+- 🗄️ **Data Access Layer** – Handles all CRUD operations through a centralized database API.
+- ☁️ **Persistence Layer**
+  - **Supabase (PostgreSQL):** Stores students, teachers, subjects, attendance records, and face embeddings.
+  - **Local JSON Storage:** Maintains temporary QR sessions and application state.
+
+The layered architecture improves modularity, maintainability, and scalability by separating presentation, business logic, AI processing, and data management.
