@@ -8,6 +8,8 @@
 
 SnapClass is an intelligent, secure, and modern class attendance management application that integrates **AI-driven Face Recognition** and dynamic **QR Code Verification**. Built specifically for educational institutions, it eliminates manual roll calls and buddy punching, providing a seamless check-in experience for students and robust management tools for teachers.
 
+🚀 **Live Demo:** https://class-web.streamlit.app/
+
 ---
 
 ## 🏗️ System Architecture
