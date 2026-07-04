@@ -7,11 +7,11 @@ from src.components.footer import footer_dashboard
 from PIL import Image
 import numpy as np
 from src.pipelines.face_pipeline import predict_attendance, get_face_embeddings, train_classifier
-from src.pipelines.voice_pipeline import get_voice_embedding
-from src.database.db import get_all_students, create_student, get_student_subjects, get_student_attendance, unenroll_student_to_subject
+from src.database.db import get_all_students, create_student, get_student_subjects, get_attendance_summary, get_student_attendance, unenroll_student_to_subject
 import time
 
 from src.components.dialog_enroll import enroll_dialog
+from src.components.dialog_qr_scan import scan_qr_dialog
 from src.components.subject_card import subject_card
 
 def student_dashboard():
@@ -21,8 +21,8 @@ def student_dashboard():
     with c1:
         header_dashboard()
     with c2:
-        st.subheader(f"""Welcome, {student_data['name']} """)
-        if st.button("Logout", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
+        st.markdown(f'<h3 style="color:#36454F; font-family:Outfit,sans-serif; margin:0;">Welcome, {student_data["name"]}</h3>', unsafe_allow_html=True)
+        if st.button("Logout", type='secondary', key='loginbackbtn'):
             st.session_state['is_logged_in'] = False
             del st.session_state.student_data 
             st.rerun()
@@ -30,12 +30,21 @@ def student_dashboard():
 
     st.space()
 
-    c1, c2 =st.columns(2)
+    c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
-        st.header('Your Enrolled Subjects')
+        st.markdown('<h2 style="color:#36454F;">Your Enrolled Subjects</h2>', unsafe_allow_html=True)
     with c2:
         if st.button('Enroll in Subject', type='primary', width='stretch'):
             enroll_dialog()
+    with c3:
+        if st.button('Scan QR Code', type='secondary', width='stretch'):
+            st.session_state.qr_error = ""
+            st.session_state.qr_status = "idle"
+            st.session_state.show_qr_scanner = True
+            st.rerun()
+
+    if st.session_state.get('show_qr_scanner', False):
+        scan_qr_dialog()
 
 
     st.divider()
@@ -43,20 +52,17 @@ def student_dashboard():
 
     with st.spinner('Loading your enrolled subjects..'):
         subjects = get_student_subjects(student_id)
+        summary_rows = get_attendance_summary(student_id)
         logs = get_student_attendance(student_id)
 
-    stats_map = {}
+    # present_count from attendance_summary (fast, pre-aggregated)
+    present_map = {row['subject_id']: row['present_count'] for row in summary_rows}
 
+    # total count per subject from attendance_logs
+    total_map = {}
     for log in logs:
         sid = log['subject_id']
-
-        if sid not in stats_map:
-            stats_map[sid] = {"total":0, "attended": 0}
-
-        stats_map[sid]['total'] +=1
-
-        if log.get('is_present'):
-            stats_map[sid]['attended'] += 1
+        total_map[sid] = total_map.get(sid, 0) + 1
 
 
     cols = st.columns(2)
@@ -65,11 +71,12 @@ def student_dashboard():
         sid = sub['subject_id']
 
 
-        stats = stats_map.get(sid,{"total":0, "attended": 0} )
-        def unenroll_button():
-                if st.button("Unenroll from tihs course", type='tertiary', width='stretch', icon=':material/delete_forever:'):
-                    unenroll_student_to_subject(student_id, sid)
-                    st.toast(f'Unenrolled from {sub['name']} successfully!')
+        attended = present_map.get(sid, 0)
+        total    = total_map.get(sid, 0)
+        def unenroll_button(s=sub, s_id=sid):
+                if st.button(f"Unenroll from {s['name']}", key=f"unenroll_{s_id}", type='tertiary', width='stretch', icon=':material/delete_forever:'):
+                    unenroll_student_to_subject(student_id, s_id)
+                    st.toast(f"Unenrolled from {s['name']} successfully!")
                     st.rerun()
 
         with cols[i % 2]:
@@ -79,8 +86,8 @@ def student_dashboard():
                 code =sub['subject_code'],
                 section = sub['section'],
                 stats = [
-                    ('📅', 'Total', stats['total']),
-                    ('✅', 'Attended', stats['attended']),
+                    ('📅', 'Total', total),
+                    ('✅', 'Attended', attended),
                 ],
                 footer_callback=unenroll_button
             )
@@ -102,15 +109,22 @@ def student_screen():
     with c1:
         header_dashboard()
     with c2:
-        if st.button("Go back to Home", type='secondary', key='loginbackbtn', shortcut="control+backspace"):
+        if st.button("Go back to Home", type='secondary', key='loginbackbtn'):
             st.session_state['login_type'] = None
             st.rerun()
 
-    st.header('Login using FaceID', text_alignment='center')
+    st.markdown('<h2 style="color:#36454F; text-align:center;">Login with FaceID</h2>', unsafe_allow_html=True)
     st.space()
     st.space()
     
     show_registration = False
+    st.markdown("""
+        <style>
+            div[data-testid="stCameraInput"] label p {
+                color: #6082B6 !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
     photo_source = st.camera_input("Position your face in the center")
 
     if photo_source:
@@ -133,27 +147,27 @@ def student_screen():
                         st.session_state.is_logged_in = True
                         st.session_state.user_role = 'student'
                         st.session_state.student_data = student
-                        st.toast(f'Welcome Back {student['name']}')
+                        from src.database.db import register_user_session
+                        register_user_session('student', student['student_id'])
+                        st.toast(f"Welcome Back {student['name']}")
                         time.sleep(1)
                         st.rerun()
                 else:
                     st.info('Face not recognized! You might be a new student!')
                     show_registration = True
     if show_registration:
+        st.markdown("""
+            <style>
+                div[data-testid="stTextInput"] label p {
+                    color: #36454F !important;
+                }
+            </style>
+        """, unsafe_allow_html=True)
         with st.container(border=True):
-            st.header('Register new Profile')
+            st.markdown('<h2 style="color:#36454F;">Register new Profile</h2>', unsafe_allow_html=True)
             new_name = st.text_input("Enter your name", placeholder='E.g. Hamza Rizvi')
 
-            st.subheader('Optional : Voice Enrollment')
-            st.info("Enroll your for voice only attendance")
-
-
-            audio_data = None
-
-            try:
-                audio_data = st.audio_input('Record a short phrase like I am present, My name is Akash.')
-            except Exception:
-                st.error('Audio Data failed!')
+            st.info("Ensure your face is clearly visible to the camera for registration.")
 
             if st.button('Create Account', type='primary'):
                 if new_name:
@@ -163,17 +177,15 @@ def student_screen():
                         if encodings:
                             face_emb = encodings[0].tolist()
 
-                            voice_emb = None
-                            if audio_data:
-                                voice_emb = get_voice_embedding(audio_data.read())
-
-                            response_data = create_student(new_name, face_embedding=face_emb, voice_embedding=voice_emb)
+                            response_data = create_student(new_name, face_embedding=face_emb)
 
                             if response_data:
                                 train_classifier()
                                 st.session_state.is_logged_in = True
                                 st.session_state.user_role = 'student'
                                 st.session_state.student_data = response_data[0]
+                                from src.database.db import register_user_session
+                                register_user_session('student', response_data[0]['student_id'])
                                 st.toast(f'Profile Created! Hi {new_name}!')
                                 time.sleep(1)
                                 st.rerun()

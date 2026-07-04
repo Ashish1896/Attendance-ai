@@ -60,7 +60,7 @@ def style_base_layout():
             h1 {
                 font-family: 'Climate Crisis', sans-serif !important;
                 font-size: 3.5rem !important;
-                line-height:1.1 1important;
+                line-height:1.1 !important;
                 margin-bottom:0rem !important;
             }
                 
@@ -73,7 +73,7 @@ def style_base_layout():
             }
                 
             h3, h4, p {
-                font-family: 'Outfit', sans-serif;    
+                font-family: 'Outfit', sans-serif;
             }
                 
 
@@ -106,6 +106,54 @@ def style_base_layout():
 
             button:hover{
                 transform :scale(1.05)}
+                
+            /* Hide fullscreen options globally */
+            button[title="View fullscreen"],
+            button[data-testid="StyledFullScreenButton"],
+            div[data-testid="stImage"] button,
+            div[data-testid="stImageHoverContainer"] button,
+            [data-testid="stElementContainer"] button[title="View fullscreen"],
+            [data-testid="stElementContainer"] [data-testid="StyledFullScreenButton"],
+            button[kind="elementToolbar"],
+            [data-testid="stBaseButton-elementToolbar"],
+            [data-testid="stElementToolbarButtonIcon"],
+            .st-emotion-cache-1u3gpve {
+                display: none !important;
+            }
+            
+            /* Global text input label color */
+            div[data-testid="stTextInput"] label p {
+                color: #36454F !important;
+            }
+            
+            /* Responsive column layouts for mobile views */
+            @media (max-width: 768px) {
+                html, body, [data-testid="stAppViewContainer"], .stApp {
+                    max-width: 100vw !important;
+                    overflow-x: hidden !important;
+                }
+                div[data-testid="stHorizontalBlock"] {
+                    flex-direction: column !important;
+                    gap: 12px !important;
+                }
+                div[data-testid="column"] {
+                    width: 100% !important;
+                    flex: 1 1 100% !important;
+                    min-width: 100% !important;
+                }
+                /* Keep records action toolbar horizontal on mobile */
+                div[data-testid="stVerticalBlock"].st-key-attendance_toolbar div[data-testid="stHorizontalBlock"],
+                .st-key-attendance_toolbar div[data-testid="stHorizontalBlock"] {
+                    flex-direction: row !important;
+                    gap: 8px !important;
+                }
+                div[data-testid="stVerticalBlock"].st-key-attendance_toolbar div[data-testid="column"],
+                .st-key-attendance_toolbar div[data-testid="column"] {
+                    width: auto !important;
+                    flex: 1 1 0% !important;
+                    min-width: 0 !important;
+                }
+            }
         </style>  
 
                 """

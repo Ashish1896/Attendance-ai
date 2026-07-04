@@ -19,6 +19,4 @@ segno
 pillow
 
 
-
-librosa
-resemblyzer
+
